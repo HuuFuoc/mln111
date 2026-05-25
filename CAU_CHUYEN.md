@@ -693,42 +693,68 @@ final layout stabilizes
 
 ---
 
-# 6. Prompt tạo ảnh cho từng scene (tách theo lớp)
+# 6. Prompt tạo ảnh cho từng scene (cho ChatGPT / DALL·E)
 
-Mỗi scene được tách thành nhiều prompt nhỏ để generate riêng từng layer (background, nhân vật, props, lighting). Mục đích:
+Mỗi scene vẫn được tách thành nhiều prompt nhỏ để generate từng layer (background, nhân vật, props, overlay). Mục đích:
 
-- Dễ giữ nhân vật M nhất quán giữa các scene.
-- Dễ ghép lớp parallax/animation bằng React Spring (background chậm, character vừa, props nhanh).
-- Dễ chỉnh sửa từng phần mà không phải regenerate cả ảnh.
+- Dễ giữ nhân vật M nhất quán giữa các scene (thông qua character reference sheet ở 6.1).
+- Dễ ghép parallax/animation bằng React Spring (background chậm, character vừa, props nhanh).
+- Dễ chỉnh sửa từng phần mà không phải regen cả ảnh.
 
-## 6.0 Common style tokens (đã inline sẵn ở mọi prompt bên dưới — chỉ tham khảo)
+## 6.0 Cách dùng prompt với ChatGPT
+
+1. Generate **character reference sheet (mục 6.1)** trước nhất. Tải file PNG về.
+2. Với mọi prompt có nhân vật M: **upload reference sheet vào cùng turn chat** rồi paste prompt — ChatGPT sẽ dùng ảnh đó để giữ khuôn mặt/dáng người nhất quán giữa các scene.
+3. **QUAN TRỌNG — Scene Anchor pattern (giữ các layer trong cùng scene khớp với nhau):**
+   - Mỗi scene 01–08 có một khối **Scene Anchor** ở đầu, mô tả cố định: layout đồ vật, vị trí + dáng nhân vật, hướng ánh sáng, góc máy.
+   - Khi gửi bất kỳ layer prompt nào của scene (background / props / character / overlay) cho ChatGPT, **paste nguyên xi khối Scene Anchor vào TRƯỚC**, rồi mới paste prompt layer phía sau. Cấu trúc 1 turn chat:
+
+     ```
+     [SCENE ANCHOR của scene X — copy nguyên xi]
+
+     [Prompt layer cụ thể — vd: 01a Background]
+     ```
+
+   - Như vậy mọi layer cùng scene đều dựa trên cùng một "thế giới vật lý" — background sẽ có đúng chiếc bàn, character sẽ ngồi đúng chiếc ghế bên cạnh bàn đó, props sẽ ở đúng vị trí. Khi compose trong React Spring các layer sẽ khớp nhau.
+   - Mỗi prompt layer đã có ghi chú "trong ảnh này không có nhân vật" / "nền xám trung tính phẳng" — đó là chỉ dẫn để ChatGPT chỉ render PHẦN của scene anchor mà layer đó cần.
+4. Với layer **background / props**: prompt đã yêu cầu "nền xám trung tính phẳng" hoặc "nền tối phẳng" — DALL·E không xuất PNG trong suốt thật, nhưng ảnh có nền solid sẽ dễ remove bằng `remove.bg`, Photoshop hoặc `rembg` sau khi tải về.
+5. ChatGPT/DALL·E **không nhận negative prompt** kiểu Midjourney. Mọi yêu cầu "không có…" đã được viết lại thành chỉ dẫn dương trong cùng prompt (vd: "trong ảnh không có chữ").
+6. Tỉ lệ khung hình ghi bằng lời ("ảnh ngang 16:9", "ảnh dọc 9:16") — ChatGPT tự chọn size phù hợp.
+7. Nếu kết quả lệch quá nhiều so với reference sheet, gõ tiếp: *"Vẽ lại, giữ đúng khuôn mặt và kiểu tóc của nhân vật trong ảnh tham chiếu đầu tiên."*
+8. Nếu layer character không khớp layout của background (vd: ghế khác, góc máy lệch), gõ tiếp: *"Vẽ lại theo đúng layout và góc máy trong Scene Anchor — M phải ngồi/đứng đúng vị trí đã mô tả."*
+
+**Style tokens dùng chung (đã inline trong mọi prompt — chỉ tham khảo):**
 
 ```
-STYLE    = cinematic digital illustration, semi-realistic, emotional storytelling, painterly brush strokes, soft cinematic lighting, shallow depth of field, subtle film grain
-PALETTE  = color palette of midnight blue, deep violet, cool gray with warm amber accents, low saturation
-NEGATIVE = text, letters, watermark, logo, signature, extra fingers, distorted face, low quality, blurry, oversaturated, cartoon, anime chibi, 3d render plastic
+STYLE   = cinematic digital illustration, semi-realistic, painterly brush strokes,
+          soft cinematic lighting, shallow depth of field, subtle film grain
+PALETTE = midnight blue, deep violet, cool gray with warm amber accents, low saturation
+AVOID   = chữ/logo/watermark trong ảnh, méo mặt/lệch mắt/thừa ngón,
+          phong cách anime chibi, 3D nhựa, quá bão hòa
 ```
-
-Mỗi prompt bên dưới có 2 khối **Positive** (paste vào ô prompt chính) và **Negative** (paste vào ô negative prompt). Với prompt nhân vật M, **đính kèm Character reference sheet (mục 6.1)** làm reference image — Midjourney `--cref <url>`, Stable Diffusion IP-Adapter / Reference ControlNet, hoặc Gemini / Nano Banana với image input.
 
 ## 6.1 Character reference sheet – M (generate trước, dùng cho mọi scene)
 
-**Positive:**
-
 ```
-Character reference sheet of "M", a 19-year-old Vietnamese female university student. Slim build around 1m60, oval face, soft jawline, light tan skin, single-eyelid almond eyes, small nose, natural lips. Long straight black hair to shoulder, side-parted, occasionally tied in a low ponytail. Default outfit: oversized cream beige sweater, dark indigo straight jeans, white canvas sneakers, small black canvas backpack. Quiet, introspective expression, slightly tired eyes, gentle posture. Three views on the same canvas: front view, 3/4 view, side view. Neutral light gray background, even diffuse lighting, full body. Cinematic digital illustration, semi-realistic, emotional storytelling, painterly brush strokes, soft cinematic lighting, subtle film grain, color palette of midnight blue, deep violet, cool gray with warm amber accents, low saturation.
+Hãy vẽ một character reference sheet cho nhân vật tên "M" — nữ sinh viên đại học Việt Nam, 19 tuổi.
+
+Ngoại hình: dáng nhỏ khoảng 1m60, mặt trái xoan, đường hàm mềm, da rám nhẹ, mắt một mí hình hạnh nhân, mũi nhỏ, môi tự nhiên. Tóc đen dài chấm vai, rẽ ngôi lệch, đôi lúc buộc đuôi ngựa thấp.
+
+Trang phục mặc định: áo len oversized màu kem be, jeans màu chàm đậm dáng suông, giày canvas trắng, balo canvas đen nhỏ.
+
+Biểu cảm: trầm tĩnh, nội tâm, ánh mắt hơi mệt nhưng dịu dàng.
+
+Bố cục: 3 góc nhìn trên cùng một canvas — front view, 3/4 view, side view. Full body. Nền xám trung tính phẳng. Ánh sáng diffuse đều.
+
+Style: cinematic digital illustration, semi-realistic, painterly brush strokes, soft cinematic lighting, subtle film grain. Palette: midnight blue, deep violet, cool gray with warm amber accents, low saturation.
+
+Trong ảnh không có chữ, không logo, không watermark. Khuôn mặt cân đối, hai mắt đối xứng, đủ ngón tay. Tránh phong cách anime chibi và 3D nhựa.
 ```
 
-**Negative:**
+**Outfit variants** (mô tả lại khi prompt từng scene):
 
-```
-text, letters, watermark, logo, signature, extra fingers, distorted face, asymmetrical eyes, multiple characters merged, low quality, blurry, oversaturated, cartoon, anime chibi, 3d render plastic
-```
-
-Outfit variants để swap khi prompt từng scene:
-
-- **Quê**: áo sơ mi trắng cũ + quần vải xám, dép tổ ong.
-- **Đi học**: sweater be + jeans indigo + balo canvas đen.
+- **Quê**: áo sơ mi trắng cũ, quần vải xám, dép tổ ong.
+- **Đi học**: sweater be, jeans indigo, balo canvas đen.
 - **Phòng trọ buổi tối**: hoodie xám rộng, quần đùi, tóc búi lỏng.
 - **Online persona**: sweater hồng pastel, son nhẹ, tóc chải gọn, ánh beauty light.
 - **Kết**: áo len mỏng vàng nhạt, tóc xõa tự nhiên.
@@ -737,532 +763,728 @@ Outfit variants để swap khi prompt từng scene:
 
 ## Scene 01 – Ánh đèn đầu tiên
 
+### Scene Anchor (paste nguyên xi vào ĐẦU mỗi prompt layer 01a–01d)
+
+```
+[SCENE ANCHOR — Scene 01: Ánh đèn đầu tiên]
+
+Setting: phòng ngủ miền quê Việt Nam vào ban đêm, nhìn ra qua một khung cửa sổ gỗ cũ lớn ở giữa khung hình.
+
+Layout cố định (mọi layer phải khớp):
+- Cửa sổ gỗ tróc sơn ở chính giữa phía sau khung.
+- Bàn học gỗ nhỏ kê SÁT DƯỚI cửa sổ; trên bàn có vở mở (chữ tay tiếng Việt như nét trừu tượng không đọc được), cốc sứ, đèn giấy phát ánh ấm dịu.
+- Ghế gỗ thấp đặt nghiêng BÊN CẠNH bàn, hướng mặt ra cửa sổ.
+- Vách ván gỗ; ảnh gia đình bạc màu treo trên tường bên trái.
+- Ngoài cửa sổ: đồng lúa, bóng cây dừa, mái ngói xa; đường chân trời có vài chấm sáng nhỏ là ánh đèn thành phố.
+
+Nhân vật M: ngồi nghiêng trên CHÍNH chiếc ghế gỗ cạnh bàn (không phải ghế khác), gối hơi co lên, cằm tựa lên tay, nhìn ra cửa sổ. Mặc áo sơ mi trắng cũ + quần vải xám (outfit "quê").
+
+Ánh sáng: ánh trăng xanh lạnh từ camera trái (qua cửa sổ); ánh đèn giấy ấm trong phòng từ camera phải. Mọi layer của scene phải giữ đúng 2 hướng sáng này.
+
+Góc máy: wide cinematic 16:9, camera đặt ngang tầm cửa sổ.
+
+Palette: midnight blue, deep violet, cool gray, accent amber ấm, low saturation.
+```
+
 ### 01a · Background
 
-**Positive:**
-
 ```
-A quiet rural Vietnamese countryside at night seen through a large old wooden window frame, distant horizon with tiny faint city lights as small glowing dots, vast deep navy sky with subtle stars, silhouettes of palm trees and tiled-roof houses far away, soft blue-purple moonlight, light mist drifting over rice fields, empty room with no character, wide cinematic composition, camera placed at window height. Cinematic digital illustration, semi-realistic, emotional storytelling, painterly brush strokes, soft cinematic lighting, shallow depth of field, subtle film grain. Color palette of midnight blue, deep violet, cool gray with warm amber accents, low saturation. 16:9 aspect ratio.
-```
+Hãy vẽ một cảnh đêm tại miền quê Việt Nam yên tĩnh, nhìn qua khung cửa sổ gỗ cũ lớn. Đường chân trời xa xa hiện vài chấm sáng nhỏ — ánh đèn thành phố. Bầu trời navy sâu lấp ló sao mờ, bóng cây dừa và mái ngói xa xa, ánh trăng xanh tím dịu, sương nhẹ trôi trên đồng lúa. Phòng trống, không có người.
 
-**Negative:**
+Bố cục: wide cinematic shot, camera đặt ngang tầm cửa sổ. Ảnh ngang 16:9.
 
-```
-text, letters, watermark, logo, signature, people, characters, low quality, blurry, oversaturated, cartoon, anime chibi, 3d render plastic
+Style: cinematic digital illustration, semi-realistic, painterly brush strokes, soft cinematic lighting, shallow depth of field, subtle film grain. Palette: midnight blue, deep violet, cool gray with warm amber accents, low saturation.
+
+Trong ảnh không có chữ, không logo, không watermark, không có người. Tránh phong cách anime chibi và 3D nhựa.
 ```
 
 ### 01b · Interior / props (foreground layer)
 
-**Positive:**
-
 ```
-Inside a humble Vietnamese rural bedroom at night: old wooden window with peeling paint, a small wooden study desk in front of the window, open notebook with handwritten Vietnamese as unreadable abstract strokes, worn canvas school bag, ceramic cup, paper lamp giving warm soft glow, wooden plank wall, faded family photo on the wall. No character. Lighting matches cool moonlight from outside the window mixed with warm lamp from inside, plain dark background for easy compositing. Cinematic digital illustration, semi-realistic, emotional storytelling, painterly brush strokes, soft cinematic lighting, shallow depth of field, subtle film grain. Color palette of midnight blue, deep violet, cool gray with warm amber accents, low saturation. 16:9 aspect ratio.
-```
+Hãy vẽ nội thất một phòng ngủ miền quê Việt Nam khiêm tốn vào ban đêm: cửa sổ gỗ tróc sơn, bàn học gỗ nhỏ đặt trước cửa sổ, vở mở với nét chữ tay tiếng Việt như những nét trừu tượng không đọc được, balo canvas cũ, cốc sứ, đèn giấy phát ánh ấm dịu, vách ván gỗ, ảnh gia đình bạc màu trên tường. Không có người.
 
-**Negative:**
+Ánh sáng: ánh trăng lạnh từ ngoài cửa sổ pha với ánh đèn ấm trong phòng. Nền tối phẳng để dễ tách lớp khi compose. Ảnh ngang 16:9.
 
-```
-text, letters, watermark, logo, signature, people, characters, readable handwriting, low quality, blurry, oversaturated, cartoon, anime chibi, 3d render plastic
+Style: cinematic digital illustration, semi-realistic, painterly brush strokes, soft cinematic lighting, shallow depth of field, subtle film grain. Palette: midnight blue, deep violet, cool gray with warm amber accents, low saturation.
+
+Trong ảnh không có chữ đọc được, không logo, không watermark, không có người. Tránh phong cách anime chibi và 3D nhựa.
 ```
 
-### 01c · Character (M) — attach reference sheet 6.1
+### 01c · Character (M) — đính kèm reference sheet 6.1
 
-**Positive:**
-
-```
-A 19-year-old Vietnamese female university student named M (use the attached character reference sheet for face and body), wearing the rural "quê" outfit: old white button-up shirt and gray cloth pants. She sits sideways on a wooden chair beside a window, knees pulled up slightly, chin resting on her hand, looking out toward the far horizon with hopeful but uncertain eyes. Soft cool moonlight from camera left on her face, warm lamp rim light from camera right. Character isolated on a transparent or solid neutral background for compositing, full body shot. Cinematic digital illustration, semi-realistic, emotional storytelling, painterly brush strokes, soft cinematic lighting, shallow depth of field, subtle film grain. Color palette of midnight blue, deep violet, cool gray with warm amber accents, low saturation.
-```
-
-**Negative:**
+> Upload **reference sheet 6.1** vào turn chat này trước khi paste prompt.
 
 ```
-text, letters, watermark, logo, signature, extra fingers, distorted face, asymmetrical eyes, multiple people, background scenery, low quality, blurry, oversaturated, cartoon, anime chibi, 3d render plastic
+Hãy vẽ nhân vật M — nữ sinh viên Việt Nam 19 tuổi trong ảnh tham chiếu đính kèm — giữ đúng khuôn mặt, dáng người và độ tuổi.
+
+M mặc outfit "quê": áo sơ mi trắng cũ, quần vải xám. M ngồi nghiêng trên ghế gỗ cạnh cửa sổ, gối hơi co lên, cằm tựa lên tay, nhìn ra đường chân trời xa với ánh mắt hy vọng pha lẫn bất an.
+
+Ánh sáng: ánh trăng lạnh từ camera trái chiếu lên mặt, ánh đèn ấm làm rim light từ camera phải. Full body shot.
+
+Nền: xám trung tính phẳng để dễ tách nhân vật khi compose vào background 01a.
+
+Style: cinematic digital illustration, semi-realistic, painterly brush strokes, soft cinematic lighting, shallow depth of field, subtle film grain. Palette: midnight blue, deep violet, cool gray with warm amber accents, low saturation.
+
+Trong ảnh không có chữ/logo/watermark, chỉ một nhân vật M, không có background phức tạp. Khuôn mặt cân đối, đủ ngón tay, đôi mắt đối xứng. Tránh phong cách anime chibi và 3D nhựa.
 ```
 
 ### 01d · Lighting / atmosphere overlay (optional)
 
-**Positive:**
-
 ```
-Volumetric moonlight rays angled through a window frame, faint cool blue atmospheric haze, dust particles floating in the air, soft cinematic vignette. Designed as a transparent overlay layer with no character and no objects. Color palette of midnight blue, deep violet, cool gray, low saturation. Subtle film grain.
-```
+Hãy vẽ một lớp overlay ánh sáng: tia trăng volumetric chiếu xiên qua khung cửa sổ, sương mờ xanh lạnh, hạt bụi lơ lửng trong không khí, vignette mềm.
 
-**Negative:**
+Bố cục để dùng làm overlay: nền tối phẳng (sẽ blend "screen" hoặc "lighten" trong React layer). Không có nhân vật hay vật thể. Ảnh ngang 16:9.
 
-```
-text, letters, watermark, logo, characters, objects, solid opaque background, low quality, blurry
+Palette: midnight blue, deep violet, cool gray, low saturation. Subtle film grain.
+
+Trong ảnh không có chữ/logo/watermark.
 ```
 
 ---
 
 ## Scene 02 – Thành phố và những tiêu chuẩn mới
 
+### Scene Anchor (paste nguyên xi vào ĐẦU mỗi prompt layer 02a–02d)
+
+```
+[SCENE ANCHOR — Scene 02: Thành phố và những tiêu chuẩn mới]
+
+Setting: vỉa hè một con phố hiện đại ở thành phố Việt Nam, đầu tối, vừa mưa nhẹ xong nên mặt nhựa loang loáng nước.
+
+Layout cố định (mọi layer phải khớp):
+- Cao ốc hai bên đường với bảng hiệu phát sáng kiểu Việt Nam (chữ chỉ là nét trừu tượng không đọc được).
+- Vệt sáng đèn xe máy kéo dài chạy qua phía sau, biển neon xanh tím và hồng.
+- Đám đông sinh viên ẩn danh đi ngang qua phía sau lưng M, chỉ thấy lưng/profile blur, đeo balo và cầm điện thoại.
+- Quanh M lơ lửng 8–12 floating UI cards: avatar tròn, icon trái tim, bong bóng comment, ribbon huy hiệu, đường biểu đồ chấm — tất cả KHÔNG chứa chữ thật.
+
+Nhân vật M: đứng yên trên vỉa hè ngay CHÍNH GIỮA khung, vai hơi rụt, ngẩng nhìn lên các biển quảng cáo, biểu cảm nhỏ bé hy vọng pha lẫn bị áp đảo. Mặc sweater oversized kem be + jeans chàm đậm + giày canvas trắng + balo canvas đen nhỏ (outfit "đi học").
+
+Ánh sáng: rim light xanh tím lạnh từ neon thành phố phía SAU lưng M; front fill mềm từ phía trước.
+
+Góc máy: wide cinematic 16:9, ngang tầm mắt M.
+
+Palette: midnight blue, deep violet, cool gray với electric blue và warm amber accents, low saturation.
+```
+
 ### 02a · Background
 
-**Positive:**
-
 ```
-Busy modern Vietnamese city street at early evening: tall buildings with glowing billboards in Vietnamese-looking signage that is abstract and unreadable, streams of motorbike headlights forming light trails, neon signs in blue-violet and pink, slight rain reflection on asphalt, crowd silhouettes blurred in the distance. Wide cinematic shot, no main character. Cinematic digital illustration, semi-realistic, emotional storytelling, painterly brush strokes, soft cinematic lighting, shallow depth of field, subtle film grain. Color palette of midnight blue, deep violet, cool gray with electric blue and warm amber accents, low saturation. 16:9 aspect ratio.
-```
+Hãy vẽ một con phố hiện đại ở thành phố Việt Nam vào đầu buổi tối: cao ốc với bảng hiệu phát sáng kiểu Việt Nam nhưng các chữ chỉ là nét trừu tượng không đọc được, dòng đèn xe máy kéo thành vệt sáng, biển neon xanh tím và hồng, mặt đường nhựa loang loáng nước mưa, bóng đám đông mờ ở xa. Không có nhân vật chính.
 
-**Negative:**
+Bố cục: wide cinematic shot. Ảnh ngang 16:9.
 
-```
-text, letters, readable signage, watermark, logo, signature, named brand, main character in focus, low quality, blurry, oversaturated, cartoon, anime chibi, 3d render plastic
+Style: cinematic digital illustration, semi-realistic, painterly brush strokes, soft cinematic lighting, shallow depth of field, subtle film grain. Palette: midnight blue, deep violet, cool gray with electric blue and warm amber accents, low saturation.
+
+Trong ảnh không có chữ đọc được, không tên thương hiệu cụ thể, không logo, không watermark, không có nhân vật chính nổi bật. Tránh phong cách anime chibi và 3D nhựa.
 ```
 
 ### 02b · Crowd layer (mid-ground)
 
-**Positive:**
-
 ```
-Anonymous out-of-focus crowd of Vietnamese university-age people walking past the camera, backs and side profiles, carrying backpacks and phones, slightly blurred with shallow depth of field. Transparent background, isolated mid-ground asset, no main character. Cinematic digital illustration, semi-realistic, painterly brush strokes, soft cinematic lighting, subtle film grain. Color palette of midnight blue, deep violet, cool gray with warm amber accents, low saturation.
-```
+Hãy vẽ một đám đông ẩn danh là sinh viên Việt Nam tuổi đại học đang đi ngang qua camera — chỉ thấy lưng và profile nghiêng, đeo balo và cầm điện thoại, hơi out-of-focus.
 
-**Negative:**
+Bố cục: tất cả nhân vật phụ đặt trên nền xám trung tính phẳng để dễ tách lớp mid-ground khi compose. Không có nhân vật chính.
 
-```
-text, letters, watermark, logo, signature, recognizable faces, main character, sharp focus, low quality, oversaturated, cartoon, anime chibi, 3d render plastic
+Style: cinematic digital illustration, semi-realistic, painterly brush strokes, soft cinematic lighting, shallow depth of field, subtle film grain. Palette: midnight blue, deep violet, cool gray with warm amber accents, low saturation.
+
+Trong ảnh không có chữ/logo/watermark, không có khuôn mặt nhận diện rõ. Tránh phong cách anime chibi và 3D nhựa.
 ```
 
-### 02c · Character (M) — attach reference sheet 6.1
+### 02c · Character (M) — đính kèm reference sheet 6.1
 
-**Positive:**
-
-```
-Vietnamese female university student M (use the attached character reference sheet), wearing the "đi học" outfit: oversized cream beige sweater, dark indigo straight jeans, white canvas sneakers, small black canvas backpack. Standing still on a sidewalk, slightly hunched shoulders, looking up at billboards, expression small and hopeful but overwhelmed. Cool blue-violet rim light from city neon behind her, soft front fill. Character isolated, transparent background, full body shot. Cinematic digital illustration, semi-realistic, painterly brush strokes, soft cinematic lighting, shallow depth of field, subtle film grain. Color palette of midnight blue, deep violet, cool gray with warm amber accents, low saturation.
-```
-
-**Negative:**
+> Upload **reference sheet 6.1** vào turn chat này trước khi paste prompt.
 
 ```
-text, letters, watermark, logo, signature, extra fingers, distorted face, asymmetrical eyes, multiple people, background scenery, low quality, blurry, oversaturated, cartoon, anime chibi, 3d render plastic
+Hãy vẽ nhân vật M — nữ sinh viên Việt Nam 19 tuổi trong ảnh tham chiếu đính kèm — giữ đúng khuôn mặt và dáng người.
+
+M mặc outfit "đi học": áo len oversized màu kem be, jeans chàm đậm dáng suông, giày canvas trắng, balo canvas đen nhỏ. M đứng yên trên vỉa hè, vai hơi rụt, ngẩng nhìn các biển quảng cáo, biểu cảm nhỏ bé — hy vọng pha lẫn cảm giác bị áp đảo.
+
+Ánh sáng: rim light xanh tím lạnh từ neon thành phố phía sau, front fill mềm. Full body shot.
+
+Nền: xám trung tính phẳng để dễ tách nhân vật khi compose vào background 02a.
+
+Style: cinematic digital illustration, semi-realistic, painterly brush strokes, soft cinematic lighting, shallow depth of field, subtle film grain. Palette: midnight blue, deep violet, cool gray with warm amber accents, low saturation.
+
+Trong ảnh không có chữ/logo/watermark, chỉ có một nhân vật M, không có background phức tạp. Khuôn mặt cân đối, đủ ngón tay, đôi mắt đối xứng. Tránh phong cách anime chibi và 3D nhựa.
 ```
 
 ### 02d · Floating social media cards (props)
 
-**Positive:**
-
 ```
-A set of 8 to 12 stylized floating UI cards in mid-air, each containing abstract placeholder content: profile avatar circles, heart icons, comment bubble shapes, achievement badge ribbons, dotted graph lines. Glowing soft edges, frosted glass material, slight random tilt angles. All cards contain NO real letters — use abstract glyphs, dots, or wavy lines instead. Transparent background, isolated PNG assets. Cinematic digital illustration, painterly, soft cinematic lighting, subtle film grain. Color palette of midnight blue, deep violet, cool gray with warm amber and pink accents, low saturation.
-```
+Hãy vẽ một bộ 8–12 floating UI cards phong cách hóa, lơ lửng trong không trung. Mỗi card chứa nội dung trừu tượng: vòng tròn avatar, icon trái tim, hình bong bóng bình luận, ribbon huy hiệu thành tích, đường biểu đồ chấm. Cạnh card phát sáng nhẹ, chất liệu frosted glass, mỗi card nghiêng nhẹ ngẫu nhiên.
 
-**Negative:**
+Quan trọng: tất cả card KHÔNG chứa chữ thật — dùng glyph trừu tượng, các chấm, hoặc nét lượn sóng thay cho chữ.
 
-```
-text, letters, words, readable typography, watermark, logo, brand, characters, low quality, blurry, oversaturated, cartoon, 3d render plastic
+Bố cục: các card đặt trên nền xám trung tính phẳng để dễ tách thành PNG riêng khi compose.
+
+Style: cinematic digital illustration, painterly, soft cinematic lighting, subtle film grain. Palette: midnight blue, deep violet, cool gray with warm amber and pink accents, low saturation.
+
+Trong ảnh không có chữ đọc được, không typography thật, không logo, không tên thương hiệu, không có nhân vật. Tránh phong cách anime chibi và 3D nhựa.
 ```
 
 ---
 
 ## Scene 03 – Phiên bản online ra đời (split-screen)
 
+### Scene Anchor (paste nguyên xi vào ĐẦU mỗi prompt layer 03a–03e)
+
+```
+[SCENE ANCHOR — Scene 03: Phiên bản online ra đời (split-screen)]
+
+Bố cục split-screen DỌC: ảnh ngang 16:9 chia đôi bằng một đường dọc ở chính giữa khung. Mọi layer phải tôn trọng đúng đường chia này.
+
+NỬA TRÁI (thế giới online):
+- Background: studio chụp hình ảo — gradient hồng pastel + magenta ấm, bokeh ring-light beauty, sparkle nhỏ.
+- M (online persona): mặc sweater hồng pastel, makeup natural-glam, tóc chải gọn, mỉm cười dịu, tay đặt gần cằm, đầu nghiêng nhẹ. Half-body. Đứng ở chính giữa nửa trái.
+- Props quanh M (Set A — warm): icon trái tim lơ lửng, ngón cái like, bụi sparkle. Glow hồng pastel và vàng ấm.
+- Ánh sáng: beauty light ấm từ phía trước + halo glow phía sau tóc.
+- Palette: pastel pink, magenta, cream, soft gold.
+
+NỬA PHẢI (đời thật):
+- Background: phòng trọ nhỏ tối ở Việt Nam — giường nhàu, đống quần áo trên ghế, cốc mì ăn liền dở, dây sạc trên sàn.
+- M (đời thật): mặc hoodie xám oversized, tóc búi lỏng, không trang điểm. Ngồi bệt trên sàn dựa lưng vào giường, gối co lên, một tay cầm điện thoại, mắt mệt trống rỗng, miệng hơi hé. Half-body. Ở chính giữa nửa phải.
+- Props quanh M (Set B — cold): chuông notification ghost tối giản, bong bóng chat đang mờ. Glow cyan xanh lạnh.
+- Ánh sáng: ánh xanh lạnh từ màn hình điện thoại hắt TỪ DƯỚI LÊN mặt M; bóng đổ nặng các vùng còn lại.
+- Palette: deep teal, cold blue, charcoal gray.
+
+Lưu ý: M ở nửa trái và M ở nửa phải PHẢI là cùng một người (giữ đúng khuôn mặt theo reference sheet 6.1) — chỉ khác outfit, makeup, dáng và ánh sáng.
+```
+
 ### 03a · Background – LEFT (online world)
 
-**Positive:**
-
 ```
-A bright glowing studio-like background: pastel pink and warm magenta gradient, soft beauty ring-light bokeh, faint sparkle particles drifting, clean and curated look. No character, no readable text. Vertical half-frame composition. Cinematic digital illustration, semi-realistic, painterly brush strokes, soft cinematic lighting, subtle film grain. Vibrant but soft palette: pastel pink, magenta, warm cream, light peach.
-```
+Hãy vẽ một background sáng kiểu studio chụp hình: gradient hồng pastel pha magenta ấm, bokeh ring-light beauty mềm, hạt sparkle nhỏ trôi nhẹ, vibe sạch và được curate kỹ. Không có nhân vật.
 
-**Negative:**
+Bố cục: nửa khung dọc (vertical half-frame) — phần này sẽ ghép cạnh background bên phải.
 
-```
-text, letters, watermark, logo, signature, characters, dark heavy shadows, gritty, low quality, blurry, oversaturated, cartoon, anime chibi, 3d render plastic
+Style: cinematic digital illustration, semi-realistic, painterly brush strokes, soft cinematic lighting, subtle film grain. Palette: pastel pink, magenta, warm cream, light peach — tươi nhưng vẫn dịu.
+
+Trong ảnh không có chữ/logo/watermark, không có người, không có bóng đổ nặng. Tránh phong cách anime chibi và 3D nhựa.
 ```
 
 ### 03b · Background – RIGHT (real world)
 
-**Positive:**
-
 ```
-A small dark Vietnamese rented room at night: messy bed with rumpled sheets, clothes piled on a chair, half-empty cup of instant noodles, charger cable on the floor, a single off-screen phone screen as the only light source casting cold blue glow on the wall. No character, quiet and lonely atmosphere. Vertical half-frame composition. Cinematic digital illustration, semi-realistic, painterly brush strokes, soft cinematic lighting, heavy shadows, subtle film grain. Color palette of deep teal, cold blue, charcoal gray, low saturation.
-```
+Hãy vẽ một phòng trọ nhỏ tối ở Việt Nam vào ban đêm: giường bừa với chăn nhàu, đống quần áo trên ghế, cốc mì ăn liền dở, dây sạc nằm trên sàn. Nguồn sáng duy nhất là ánh xanh lạnh từ một màn hình điện thoại nằm ngoài khung, hắt lên tường. Không có nhân vật, không khí lặng và cô đơn.
 
-**Negative:**
+Bố cục: nửa khung dọc (vertical half-frame) — sẽ ghép cạnh background bên trái.
 
-```
-text, letters, watermark, logo, signature, people, characters, bright warm light, clean tidy room, low quality, blurry, oversaturated, cartoon, anime chibi, 3d render plastic
+Style: cinematic digital illustration, semi-realistic, painterly brush strokes, soft cinematic lighting, bóng đổ nặng, subtle film grain. Palette: deep teal, cold blue, charcoal gray, low saturation.
+
+Trong ảnh không có chữ/logo/watermark, không có người, không có ánh sáng ấm sáng rực, không phải phòng sạch sẽ ngăn nắp. Tránh phong cách anime chibi và 3D nhựa.
 ```
 
-### 03c · Character – LEFT M (online persona) — attach reference sheet 6.1
+### 03c · Character – LEFT M (online persona) — đính kèm reference sheet 6.1
 
-**Positive:**
-
-```
-Vietnamese female university student M (use the attached character reference sheet), wearing the "online persona" outfit: pastel pink sweater, soft natural-glam makeup, hair neatly styled. Posing confidently, gentle warm smile, hand near chin, slight head tilt. Warm beauty lighting from front, slight glow halo behind her hair. Character isolated on a transparent background, half-body shot. Cinematic digital illustration, semi-realistic, painterly brush strokes, soft cinematic lighting, subtle film grain. Slightly warmer palette: pastel pink, warm cream, soft gold accents.
-```
-
-**Negative:**
+> Upload **reference sheet 6.1** vào turn chat này trước khi paste prompt.
 
 ```
-text, letters, watermark, logo, signature, extra fingers, distorted face, asymmetrical eyes, multiple people, background scenery, harsh shadows, low quality, blurry, oversaturated, cartoon, anime chibi, 3d render plastic
+Hãy vẽ nhân vật M — nữ sinh viên Việt Nam 19 tuổi trong ảnh tham chiếu đính kèm — phiên bản "online persona".
+
+Outfit: sweater hồng pastel, makeup natural-glam dịu, tóc chải gọn. M tạo dáng tự tin, mỉm cười ấm dịu, tay đặt gần cằm, đầu nghiêng nhẹ.
+
+Ánh sáng: beauty light ấm từ phía trước, có halo glow nhẹ phía sau tóc. Half-body shot.
+
+Nền: xám trung tính phẳng để dễ tách nhân vật khi compose vào background 03a.
+
+Style: cinematic digital illustration, semi-realistic, painterly brush strokes, soft cinematic lighting, subtle film grain. Palette: pastel pink, warm cream, soft gold accents — ấm hơn các scene khác.
+
+Trong ảnh không có chữ/logo/watermark, chỉ một nhân vật M, không có background phức tạp, không có bóng đổ cứng. Khuôn mặt cân đối, đủ ngón tay, đôi mắt đối xứng. Tránh phong cách anime chibi và 3D nhựa.
 ```
 
-### 03d · Character – RIGHT M (real) — attach reference sheet 6.1
+### 03d · Character – RIGHT M (real) — đính kèm reference sheet 6.1
 
-**Positive:**
-
-```
-Vietnamese female university student M (use the attached character reference sheet), wearing the "phòng trọ" outfit: oversized gray hoodie, loose hair bun, no makeup. Sitting on the floor with back against the bed, knees up, phone in one hand, tired hollow eyes, mouth slightly open. Cold blue phone glow on her face from below, deep shadows elsewhere. Character isolated on a transparent background, half-body shot. Cinematic digital illustration, semi-realistic, painterly brush strokes, soft cinematic lighting, subtle film grain. Color palette of deep teal, cold blue, cool gray, low saturation.
-```
-
-**Negative:**
+> Upload **reference sheet 6.1** vào turn chat này trước khi paste prompt.
 
 ```
-text, letters, watermark, logo, signature, extra fingers, distorted face, multiple people, background scenery, bright happy expression, warm sunny light, low quality, blurry, oversaturated, cartoon, anime chibi, 3d render plastic
+Hãy vẽ nhân vật M — nữ sinh viên Việt Nam 19 tuổi trong ảnh tham chiếu đính kèm — phiên bản đời thật trong phòng trọ.
+
+Outfit "phòng trọ": hoodie xám oversized, tóc búi lỏng, không trang điểm. M ngồi bệt trên sàn dựa lưng vào giường, gối co lên, một tay cầm điện thoại, ánh mắt mệt mỏi trống rỗng, miệng hơi hé.
+
+Ánh sáng: ánh xanh lạnh từ màn hình điện thoại hắt từ dưới lên mặt, bóng đổ nặng ở các vùng còn lại. Half-body shot.
+
+Nền: xám trung tính phẳng để dễ tách nhân vật khi compose vào background 03b.
+
+Style: cinematic digital illustration, semi-realistic, painterly brush strokes, soft cinematic lighting, subtle film grain. Palette: deep teal, cold blue, cool gray, low saturation.
+
+Trong ảnh không có chữ/logo/watermark, chỉ một nhân vật M, không có background phức tạp, không có biểu cảm vui tươi, không có nắng ấm. Khuôn mặt cân đối, đủ ngón tay. Tránh phong cách anime chibi và 3D nhựa.
 ```
 
 ### 03e · Props
 
-**Positive:**
-
 ```
-Two isolated PNG asset sets on transparent background. Set A (warm): floating heart icons, like-thumb shapes, sparkle dust, soft pastel pink and warm gold glow. Set B (cold): minimal ghost-style notification bell icons, fading speech bubble outlines, cold cyan blue glow. Painterly, soft cinematic lighting, subtle film grain.
-```
+Hãy vẽ hai bộ asset riêng biệt trên cùng một canvas, nền xám trung tính phẳng để dễ tách thành PNG riêng.
 
-**Negative:**
+Set A (warm — bên online): icon trái tim lơ lửng, hình ngón cái like, bụi sparkle, glow hồng pastel và vàng ấm dịu.
 
-```
-text, letters, words, readable typography, watermark, logo, brand, characters, low quality, blurry, cartoon, 3d render plastic
+Set B (cold — bên đời thật): icon chuông notification kiểu ghost tối giản, đường viền bong bóng chat đang mờ dần, glow cyan xanh lạnh.
+
+Style: painterly, soft cinematic lighting, subtle film grain.
+
+Trong ảnh không có chữ thật, không typography đọc được, không logo, không tên thương hiệu, không có nhân vật. Tránh phong cách anime chibi và 3D nhựa.
 ```
 
 ---
 
 ## Scene 04 – "Ổn mà"
 
+### Scene Anchor (paste nguyên xi vào ĐẦU mỗi prompt layer 04a–04d)
+
+```
+[SCENE ANCHOR — Scene 04: "Ổn mà"]
+
+Setting: góc canteen hoặc khu tự học ở trường đại học, blur thành heavy bokeh đến mức background gần như trừu tượng.
+
+Layout cố định (mọi layer phải khớp):
+- M đứng ở CHÍNH GIỮA khung, medium shot.
+- 3–4 silhouette sinh viên Việt Nam tuổi đại học blur mạnh đứng vây xung quanh M (chỉ thấy lưng và vai, không có khuôn mặt rõ).
+- Cụm chat bubble trong suốt RỖNG (không có chữ thật, chỉ chấm hoặc nét lượn sóng) lơ lửng quanh M ở các kích thước và góc nghiêng khác nhau; một vài bubble nứt nhẹ hoặc tan ở cạnh.
+
+Nhân vật M: đứng giữa, nụ cười lịch sự MÍM MÔI không chạm tới mắt, mắt hơi nhìn xuống, vai hơi gồng, tay cầm điện thoại hoặc cốc cà phê. Mặc sweater oversized kem be + jeans chàm đậm (outfit "đi học").
+
+Ánh sáng: front light mềm chiếu thẳng vào M; ánh đèn sodium ấm pha với đèn fluorescent trần lạnh ở background; mặt M hơi desaturated so với môi trường.
+
+Góc máy: medium shot, wide cinematic 16:9, ngang tầm ngực M.
+
+Palette: muted blue-gray với vài đốm warm amber, low saturation.
+```
+
 ### 04a · Background
 
-**Positive:**
-
 ```
-Interior of a university cafeteria or study corner, blurred to heavy bokeh, warm sodium lights mixed with cool fluorescent ceiling lights, indistinct figures of students in the distance, shallow depth of field so background reads almost abstract. No main character, no readable signage. Wide cinematic composition. Cinematic digital illustration, semi-realistic, painterly brush strokes, soft cinematic lighting, subtle film grain. Color palette of muted blue-gray with warm amber spots, low saturation. 16:9 aspect ratio.
-```
+Hãy vẽ nội thất một góc canteen hoặc góc tự học của trường đại học, làm mờ thành heavy bokeh: ánh đèn sodium ấm pha với đèn fluorescent trần lạnh, bóng sinh viên mờ ở xa, shallow depth of field đến mức background gần như trừu tượng. Không có nhân vật chính, không có biển hiệu đọc được.
 
-**Negative:**
+Bố cục: wide cinematic shot. Ảnh ngang 16:9.
 
-```
-text, letters, readable signage, watermark, logo, signature, main character in focus, sharp foreground subjects, low quality, oversaturated, cartoon, anime chibi, 3d render plastic
+Style: cinematic digital illustration, semi-realistic, painterly brush strokes, soft cinematic lighting, subtle film grain. Palette: muted blue-gray với vài đốm amber ấm, low saturation.
+
+Trong ảnh không có chữ đọc được, không logo/watermark, không có nhân vật chính nổi rõ. Tránh phong cách anime chibi và 3D nhựa.
 ```
 
-### 04b · Character (M) — attach reference sheet 6.1
+### 04b · Character (M) — đính kèm reference sheet 6.1
 
-**Positive:**
-
-```
-Vietnamese female university student M (use the attached character reference sheet), wearing the "đi học" outfit. Standing center frame, polite tight-lipped smile that doesn't reach the eyes, eyes slightly downcast, shoulders subtly tense, hands holding a phone or coffee cup. Soft front light, slight desaturation on her face. Character isolated, transparent background, medium shot. Cinematic digital illustration, semi-realistic, painterly brush strokes, soft cinematic lighting, shallow depth of field, subtle film grain. Color palette of midnight blue, deep violet, cool gray with warm amber accents, low saturation.
-```
-
-**Negative:**
+> Upload **reference sheet 6.1** vào turn chat này trước khi paste prompt.
 
 ```
-text, letters, watermark, logo, signature, extra fingers, distorted face, asymmetrical eyes, multiple people, background scenery, wide bright smile, low quality, blurry, oversaturated, cartoon, anime chibi, 3d render plastic
+Hãy vẽ nhân vật M — nữ sinh viên Việt Nam 19 tuổi trong ảnh tham chiếu đính kèm — giữ đúng khuôn mặt và dáng người.
+
+M mặc outfit "đi học" (sweater be + jeans indigo). Đứng giữa khung, nụ cười lịch sự mím môi không chạm tới mắt, mắt hơi nhìn xuống, vai hơi gồng, tay cầm điện thoại hoặc cốc cà phê.
+
+Ánh sáng: front light mềm, mặt hơi desaturated. Medium shot.
+
+Nền: xám trung tính phẳng để dễ tách nhân vật khi compose vào background 04a.
+
+Style: cinematic digital illustration, semi-realistic, painterly brush strokes, soft cinematic lighting, shallow depth of field, subtle film grain. Palette: midnight blue, deep violet, cool gray with warm amber accents, low saturation.
+
+Trong ảnh không có chữ/logo/watermark, chỉ một nhân vật M, không có background phức tạp, không có nụ cười rộng tươi rói. Khuôn mặt cân đối, đủ ngón tay. Tránh phong cách anime chibi và 3D nhựa.
 ```
 
 ### 04c · Chat bubbles (props)
 
-**Positive:**
-
 ```
-A cluster of empty translucent chat bubbles floating in mid-air at various sizes and tilt angles, frosted glass material, soft inner glow. No readable letters — use abstract dot patterns or wavy line glyphs inside. Some bubbles slightly cracked, faded, or dissolving at the edges. Isolated transparent PNG assets. Painterly, soft cinematic lighting, subtle film grain. Color palette of midnight blue, deep violet, cool gray with warm amber accents, low saturation.
-```
+Hãy vẽ một cụm chat bubble rỗng trong suốt lơ lửng giữa không trung, đủ kích cỡ và góc nghiêng, chất liệu frosted glass, glow trong dịu. Một số bubble nứt nhẹ, mờ dần hoặc tan ở các cạnh.
 
-**Negative:**
+Quan trọng: trong bubble không có chữ đọc được — dùng pattern chấm trừu tượng hoặc nét lượn sóng thay cho text.
 
-```
-text, letters, words, readable typography, watermark, logo, brand, characters, low quality, blurry, cartoon, 3d render plastic
+Bố cục: tất cả bubble đặt trên nền xám trung tính phẳng để dễ tách thành PNG riêng khi compose.
+
+Style: painterly, soft cinematic lighting, subtle film grain. Palette: midnight blue, deep violet, cool gray with warm amber accents, low saturation.
+
+Trong ảnh không có chữ thật, không typography, không logo, không thương hiệu, không có nhân vật. Tránh phong cách anime chibi và 3D nhựa.
 ```
 
 ### 04d · Blurred friends silhouettes
 
-**Positive:**
-
 ```
-Three to four out-of-focus silhouettes of Vietnamese university students standing around an invisible center, only backs and shoulders visible, heavy gaussian blur, no faces clearly visible. Transparent background, isolated layer. Cinematic digital illustration, semi-realistic, painterly brush strokes, soft cinematic lighting, subtle film grain. Color palette of midnight blue, deep violet, cool gray, low saturation.
-```
+Hãy vẽ 3–4 bóng sinh viên đại học Việt Nam out-of-focus đứng vây quanh một điểm vô hình ở giữa, chỉ thấy lưng và vai, gaussian blur mạnh, không thấy mặt rõ.
 
-**Negative:**
+Bố cục: tất cả đặt trên nền xám trung tính phẳng để dễ tách thành lớp riêng.
 
-```
-text, letters, watermark, logo, signature, sharp focus, recognizable faces, main character, low quality, oversaturated, cartoon, anime chibi, 3d render plastic
+Style: cinematic digital illustration, semi-realistic, painterly brush strokes, soft cinematic lighting, subtle film grain. Palette: midnight blue, deep violet, cool gray, low saturation.
+
+Trong ảnh không có chữ/logo/watermark, không có khuôn mặt nhận diện được, không có nhân vật chính sắc nét. Tránh phong cách anime chibi và 3D nhựa.
 ```
 
 ---
 
 ## Scene 05 – Mình là ai?
 
+### Scene Anchor (paste nguyên xi vào ĐẦU mỗi prompt layer 05a–05e)
+
+```
+[SCENE ANCHOR — Scene 05: Mình là ai?]
+
+Setting: phòng ngủ tối gần như trống vào nửa đêm, ảnh ngang 16:9, high contrast.
+
+Layout cố định (mọi layer phải khớp):
+- Phía PHẢI khung: một chiếc smartphone DỌC khổng lồ chiếm trọn nửa phải khung, màn hình chữ nhật phát sáng như tấm gương, có halo glow dịu quanh máy, bezel và viền rõ ràng. Bên trong màn hình hiển thị phiên bản "online persona" của M.
+- Phía TRÁI khung: phòng tối — bóng mờ của bàn và giường ở phía sau, tường tối, bóng đổ rất sâu, chromatic aberration nhẹ ở các cạnh khung.
+- M (đời thật) đứng ở vùng giữa-trái khung, quay LƯNG MỘT PHẦN về camera, ngẩng lên nhìn lên màn hình điện thoại bên phải.
+
+Nhân vật M (đời thật, đứng trước phone):
+- Mặc hoodie xám oversized, tóc búi lỏng (outfit "phòng trọ").
+- Dáng nhỏ bé, bất an, vai hơi rụt.
+- Mặt thấy ở góc 3/4 từ phía sau.
+- Silhouette được rim light xanh lạnh từ màn hình.
+
+Nhân vật M (online persona, BÊN TRONG màn hình phone):
+- Mặc sweater hồng pastel, makeup natural-glam, tóc chải gọn.
+- Cười rạng rỡ, mắt tự tin, tạo dáng selfie portrait.
+- Saturation cao hơn, beauty light ấm.
+- Phải là cùng một khuôn mặt với M đời thật (theo reference sheet 6.1).
+
+Ánh sáng: nguồn sáng DUY NHẤT là ánh xanh lạnh mạnh phát ra từ màn hình điện thoại bên phải; phần còn lại bóng đổ sâu nặng.
+
+Góc máy: ảnh ngang 16:9, phone là foreground bên phải, M là mid-ground bên trái.
+
+Palette: cold cyan, deep navy, charcoal gray cho không gian phòng + warmer pastel pink cho phần online persona bên trong màn hình.
+```
+
 ### 05a · Background
 
-**Positive:**
-
 ```
-A dark near-empty bedroom at midnight, only one strong cold blue light source coming from off-screen (a giant phone screen). Dark walls, faint outline of a desk and bed, deep heavy shadows, slight chromatic aberration at frame edges. No character. Cinematic digital illustration, semi-realistic, painterly brush strokes, soft cinematic lighting, high contrast, subtle film grain. Color palette of cold cyan, deep navy, charcoal gray, low saturation. 16:9 aspect ratio.
-```
+Hãy vẽ một phòng ngủ tối gần như trống vào nửa đêm. Nguồn sáng duy nhất là ánh xanh lạnh mạnh từ ngoài khung (một màn hình điện thoại khổng lồ). Tường tối, bóng mờ của bàn và giường, bóng đổ sâu nặng, chromatic aberration nhẹ ở các cạnh khung. Không có nhân vật.
 
-**Negative:**
+Bố cục: ảnh ngang 16:9, high contrast.
 
-```
-text, letters, watermark, logo, signature, people, characters, warm light, bright room, low quality, blurry, oversaturated, cartoon, anime chibi, 3d render plastic
+Style: cinematic digital illustration, semi-realistic, painterly brush strokes, soft cinematic lighting, subtle film grain. Palette: cold cyan, deep navy, charcoal gray, low saturation.
+
+Trong ảnh không có chữ/logo/watermark, không có người, không có ánh sáng ấm, không phải phòng sáng sủa. Tránh phong cách anime chibi và 3D nhựa.
 ```
 
 ### 05b · Giant phone screen (foreground frame)
 
-**Positive:**
-
 ```
-An oversized vertical smartphone shape filling the right side of the frame, glowing rectangular screen acting like a mirror with soft glow halo around the device, visible bezel and frame edges. The screen content area is intentionally empty (will composite a character into it). Transparent or solid black background outside the phone. Cinematic digital illustration, semi-realistic, painterly, soft cinematic lighting, subtle film grain. Color palette of cold cyan, deep navy, cool gray, low saturation.
-```
+Hãy vẽ hình dáng một chiếc smartphone dọc quá khổ chiếm trọn nửa phải khung hình, màn hình chữ nhật phát sáng như một tấm gương, có halo glow dịu quanh máy, viền và bezel rõ ràng. Vùng màn hình bên trong cố tình để trống (sẽ compose một nhân vật vào sau).
 
-**Negative:**
+Bố cục: nền đen phẳng bên ngoài chiếc điện thoại, để dễ tách lớp foreground frame.
 
-```
-text, letters, words, UI elements, app icons, watermark, logo, brand, characters inside screen, low quality, blurry, oversaturated, cartoon, 3d render plastic
+Style: cinematic digital illustration, semi-realistic, painterly, soft cinematic lighting, subtle film grain. Palette: cold cyan, deep navy, cool gray, low saturation.
+
+Trong ảnh không có chữ/logo/watermark, không có UI element, không có app icon, không có nhân vật trong màn hình. Tránh phong cách anime chibi và 3D nhựa.
 ```
 
-### 05c · Real M standing in front of phone — attach reference sheet 6.1
+### 05c · Real M standing in front of phone — đính kèm reference sheet 6.1
 
-**Positive:**
-
-```
-Vietnamese female university student M (use the attached character reference sheet), wearing the "phòng trọ" outfit. Standing with her back partially to camera, looking up at a glowing phone screen, posture small and uncertain, silhouette rim-lit by cold blue light from the screen, face partially visible in 3/4 from behind. Character isolated, transparent background, full body. Cinematic digital illustration, semi-realistic, painterly brush strokes, soft cinematic lighting, subtle film grain. Color palette of cold cyan, deep navy, cool gray, low saturation.
-```
-
-**Negative:**
+> Upload **reference sheet 6.1** vào turn chat này trước khi paste prompt.
 
 ```
-text, letters, watermark, logo, signature, extra fingers, distorted face, multiple people, background scenery, warm light, smiling, low quality, blurry, oversaturated, cartoon, anime chibi, 3d render plastic
+Hãy vẽ nhân vật M — nữ sinh viên Việt Nam 19 tuổi trong ảnh tham chiếu đính kèm — giữ đúng khuôn mặt và dáng người.
+
+M mặc outfit "phòng trọ" (hoodie xám oversized, tóc búi lỏng). Đứng quay lưng một phần về phía camera, ngẩng lên nhìn màn hình điện thoại đang phát sáng, dáng nhỏ bé và bất an, silhouette được rim light xanh lạnh từ màn hình, khuôn mặt thấy một phần ở góc 3/4 từ phía sau.
+
+Bố cục: full body, nền xám trung tính phẳng để dễ tách nhân vật khi compose vào background 05a.
+
+Style: cinematic digital illustration, semi-realistic, painterly brush strokes, soft cinematic lighting, subtle film grain. Palette: cold cyan, deep navy, cool gray, low saturation.
+
+Trong ảnh không có chữ/logo/watermark, chỉ một nhân vật M, không có background phức tạp, không có ánh sáng ấm, không có nụ cười. Khuôn mặt cân đối, đủ ngón tay. Tránh phong cách anime chibi và 3D nhựa.
 ```
 
-### 05d · Online M inside the screen — attach reference sheet 6.1
+### 05d · Online M inside the screen — đính kèm reference sheet 6.1
 
-**Positive:**
-
-```
-Vietnamese female university student M (use the attached character reference sheet), styled as the "online persona": pastel pink sweater, natural-glam makeup, neat hair. Smiling brightly with confident eyes, posed like a selfie portrait framed as if seen through a phone screen, slightly higher saturation, warm front beauty light. Character isolated on a transparent background — will be composited inside the phone screen layer from 05b. Cinematic digital illustration, semi-realistic, painterly brush strokes, soft cinematic lighting, subtle film grain. Warmer pastel pink and cream palette.
-```
-
-**Negative:**
+> Upload **reference sheet 6.1** vào turn chat này trước khi paste prompt.
 
 ```
-text, letters, watermark, logo, signature, extra fingers, distorted face, asymmetrical eyes, multiple people, dark background, harsh shadows, tired sad expression, low quality, blurry, oversaturated, cartoon, anime chibi, 3d render plastic
+Hãy vẽ nhân vật M — nữ sinh viên Việt Nam 19 tuổi trong ảnh tham chiếu đính kèm — phiên bản "online persona".
+
+Style nhân vật: sweater hồng pastel, makeup natural-glam, tóc chải gọn. Cười rạng rỡ với ánh mắt tự tin, tạo dáng như chân dung selfie nhìn qua màn hình điện thoại. Saturation cao hơn các scene khác một chút, beauty light ấm từ phía trước.
+
+Bố cục: nền xám trung tính phẳng — ảnh này sẽ được compose vào bên trong phone screen ở 05b.
+
+Style: cinematic digital illustration, semi-realistic, painterly brush strokes, soft cinematic lighting, subtle film grain. Palette ấm: pastel pink, cream, soft gold.
+
+Trong ảnh không có chữ/logo/watermark, chỉ một nhân vật M, không có background tối, không có bóng đổ cứng, không có biểu cảm mệt mỏi buồn bã. Khuôn mặt cân đối, đủ ngón tay, đôi mắt đối xứng. Tránh phong cách anime chibi và 3D nhựa.
 ```
 
 ### 05e · Glitch overlay (optional)
 
-**Positive:**
-
 ```
-Subtle digital glitch artifacts: thin RGB color split lines, faint horizontal scanlines, light static noise. Transparent overlay layer, no character, no scenery. Color palette of cold cyan, magenta, and white at low opacity.
-```
+Hãy vẽ một lớp overlay glitch số tinh tế: đường RGB split mảnh, scanline ngang mờ, nhiễu tĩnh nhẹ.
 
-**Negative:**
+Bố cục: nền đen phẳng để compose dùng blend mode "screen" trên React layer. Không có nhân vật, không có cảnh.
 
-```
-text, letters, watermark, logo, characters, solid opaque background, heavy distortion, low quality
+Palette: cold cyan, magenta, trắng — opacity thấp.
+
+Trong ảnh không có chữ/logo/watermark, không có distortion quá nặng.
 ```
 
 ---
 
 ## Scene 06 – Relationship map
 
+### Scene Anchor (paste nguyên xi vào ĐẦU mỗi prompt layer 06a–06d)
+
+```
+[SCENE ANCHOR — Scene 06: Relationship map]
+
+Setting: không gian trừu tượng kiểu vũ trụ tối — gradient navy sâu chuyển sang đen, các chấm nhỏ rải rác như chòm sao, glow nebula tím dịu. Có khoảng negative space sạch ở chính giữa khung.
+
+Layout cố định (mọi layer phải khớp):
+- M đứng ở CHÍNH GIỮA khung, full body, góc máy hơi thấp (slight low angle).
+- 7 icon glow line-art phát sáng (Family, School, Friends, Social media, City, Expectations, Inner emotion) đặt xung quanh M theo VÒNG TRÒN, mỗi icon cách M khoảng đều nhau.
+- Các sợi năng lượng cong mảnh phát sáng nối từ mỗi icon vào M; một số sợi căng thẳng và thẳng, một số sợi rối hoặc kéo lệch sang các góc đối nghịch nhau, có bloom dịu và các đốm sáng nhỏ dọc theo mỗi sợi.
+
+Nhân vật M: đứng giữa, hai tay HƠI XOÈ SANG HAI BÊN như đang bị các sợi dây vô hình kéo, nhìn thẳng vào camera với biểu cảm trung tính trầm tư. Mặc sweater oversized kem be mặc định.
+
+Ánh sáng: rim light ấm dịu từ phía TRÊN ĐỈNH ĐẦU M; phần còn lại của cơ thể tông lạnh; glow cyan/tím phát ra từ icon và các sợi năng lượng.
+
+Góc máy: wide cinematic 16:9, hơi low angle.
+
+Palette: midnight blue, deep violet, cool gray với warm amber accents (cho rim light trên đầu), low saturation.
+```
+
 ### 06a · Background
 
-**Positive:**
-
 ```
-Abstract dark cosmic background, deep navy fading to black gradient, faint constellation-like dots scattered, subtle nebula glow in violet, clean negative space in the center for compositing a character. No character, no readable text. Cinematic digital illustration, semi-realistic, painterly, soft cinematic lighting, subtle film grain. Color palette of midnight blue, deep violet, cool gray with warm amber accents, low saturation. 16:9 aspect ratio.
-```
+Hãy vẽ một background trừu tượng kiểu vũ trụ tối: gradient navy sâu chuyển dần sang đen, các chấm nhỏ rải rác như chòm sao, glow nebula màu tím dịu, có khoảng negative space sạch ở giữa khung để compose nhân vật vào sau. Không có nhân vật, không có chữ.
 
-**Negative:**
+Bố cục: ảnh ngang 16:9.
 
-```
-text, letters, watermark, logo, signature, people, characters, bright daylight, cluttered foreground, low quality, blurry, oversaturated, cartoon, anime chibi, 3d render plastic
+Style: cinematic digital illustration, semi-realistic, painterly, soft cinematic lighting, subtle film grain. Palette: midnight blue, deep violet, cool gray with warm amber accents, low saturation.
+
+Trong ảnh không có chữ/logo/watermark, không có người, không có ánh nắng ngày, không có foreground rối. Tránh phong cách anime chibi và 3D nhựa.
 ```
 
-### 06b · Character (M) — attach reference sheet 6.1
+### 06b · Character (M) — đính kèm reference sheet 6.1
 
-**Positive:**
-
-```
-Vietnamese female university student M (use the attached character reference sheet), wearing the default cream sweater outfit. Standing dead center, arms slightly out at sides as if held by invisible threads, looking straight at camera with a neutral contemplative expression. Soft warm rim light from above, the rest of the body cool-toned. Character isolated, transparent background, full body, slight low-angle shot. Cinematic digital illustration, semi-realistic, painterly brush strokes, soft cinematic lighting, subtle film grain. Color palette of midnight blue, deep violet, cool gray with warm amber accents, low saturation.
-```
-
-**Negative:**
+> Upload **reference sheet 6.1** vào turn chat này trước khi paste prompt.
 
 ```
-text, letters, watermark, logo, signature, extra fingers, distorted face, asymmetrical eyes, multiple people, background scenery, exaggerated pose, low quality, blurry, oversaturated, cartoon, anime chibi, 3d render plastic
+Hãy vẽ nhân vật M — nữ sinh viên Việt Nam 19 tuổi trong ảnh tham chiếu đính kèm — giữ đúng khuôn mặt và dáng người.
+
+M mặc outfit mặc định: sweater kem be. Đứng chính giữa khung, hai tay hơi xoè sang hai bên như đang bị các sợi dây vô hình kéo, nhìn thẳng vào camera với biểu cảm trung tính, trầm tư.
+
+Ánh sáng: rim light ấm dịu từ phía trên, phần còn lại tông lạnh. Full body, góc máy hơi thấp.
+
+Nền: xám trung tính phẳng để dễ tách nhân vật khi compose vào background 06a.
+
+Style: cinematic digital illustration, semi-realistic, painterly brush strokes, soft cinematic lighting, subtle film grain. Palette: midnight blue, deep violet, cool gray with warm amber accents, low saturation.
+
+Trong ảnh không có chữ/logo/watermark, chỉ một nhân vật M, không có background phức tạp, không có dáng tạo cường điệu. Khuôn mặt cân đối, đủ ngón tay, đôi mắt đối xứng. Tránh phong cách anime chibi và 3D nhựa.
 ```
 
-### 06c · Node icons (set of 7 separate PNGs)
-
-**Positive:**
+### 06c · Node icons (7 PNG riêng)
 
 ```
-Set of seven symbolic glowing icons in a minimalist line-art style with soft halo glow, consistent stroke weight, each on a separate transparent background. The seven icons are: 1) Family — two adult silhouettes plus a small child figure; 2) School — a graduation cap; 3) Friends — three connected dots forming a triangle; 4) Social media — a stylized heart inside a rounded square; 5) City — minimal skyline of three buildings; 6) Expectations — an upward arrow with a small crown above; 7) Inner emotion — a small flickering flame. Soft cyan and violet glow, painterly digital illustration.
-```
+Hãy vẽ một bộ 7 icon biểu tượng phát sáng theo style minimalist line-art, halo glow dịu, stroke weight đều nhau. Mỗi icon đặt trên một ô riêng trong cùng canvas, nền xám trung tính phẳng để dễ tách thành PNG riêng từng icon.
 
-**Negative:**
+Danh sách 7 icon:
+1) Family — hai bóng người lớn cùng một đứa trẻ nhỏ.
+2) School — một chiếc mũ tốt nghiệp.
+3) Friends — ba chấm nối thành hình tam giác.
+4) Social media — trái tim cách điệu trong khung vuông bo góc.
+5) City — skyline tối giản 3 toà nhà.
+6) Expectations — mũi tên hướng lên với vương miện nhỏ phía trên.
+7) Inner emotion — ngọn lửa nhỏ đang lập lòe.
 
-```
-text, letters, words, watermark, logo, brand, photorealistic complex detail, characters, solid background, low quality, blurry, oversaturated, cartoon mascot, 3d render plastic
+Style: painterly digital illustration, glow cyan và tím dịu.
+
+Trong ảnh không có chữ/logo/thương hiệu, không có chi tiết photorealistic phức tạp, không có nhân vật, không có background đặc. Tránh phong cách cartoon mascot và 3D nhựa.
 ```
 
 ### 06d · Connection lines / energy strands (overlay)
 
-**Positive:**
-
 ```
-Glowing thin curved energy strands radiating from a central invisible point outward to many directions, some strands taut and straight, others tangled or pulling at conflicting angles, soft bloom and small particle sparks along each line. Transparent overlay, no character. Color palette of midnight blue, deep violet, cool gray with warm amber accents, low saturation.
-```
+Hãy vẽ các sợi năng lượng cong mảnh phát sáng tỏa từ một điểm trung tâm vô hình ra nhiều hướng. Một số sợi căng thẳng, một số rối hoặc kéo theo các góc đối nghịch nhau, có bloom dịu và các đốm sáng nhỏ dọc theo mỗi sợi.
 
-**Negative:**
+Bố cục: nền đen phẳng để compose dùng blend mode "screen" trên React layer. Không có nhân vật.
 
-```
-text, letters, watermark, logo, characters, opaque background, solid shapes, low quality, blurry, oversaturated, cartoon, 3d render plastic
+Palette: midnight blue, deep violet, cool gray with warm amber accents, low saturation.
+
+Trong ảnh không có chữ/logo/watermark, không có hình khối đặc. Tránh phong cách anime chibi và 3D nhựa.
 ```
 
 ---
 
 ## Scene 07 – Hai phiên bản hòa lại
 
+### Scene Anchor (paste nguyên xi vào ĐẦU mỗi prompt layer 07a–07e)
+
+```
+[SCENE ANCHOR — Scene 07: Hai phiên bản hòa lại]
+
+Setting: VẪN căn phòng trọ nhỏ ở Việt Nam trong Scene 03 và 05 (cùng một phòng — giữ đúng layout: giường, bàn, vị trí cửa sổ), nhưng giờ là BÌNH MINH.
+
+Layout cố định (mọi layer phải khớp):
+- Cửa sổ với tấm rèm mở hé phía sau lưng M, ánh nắng ấm xuyên qua, hạt bụi bay trong tia nắng.
+- Tường phòng bắt ánh vàng ấm pha với ánh xanh lạnh còn sót lại từ đêm.
+- M đứng ngay cạnh cửa sổ, half-body, góc 3/4 nhẹ.
+- Phía sau lưng M, BÊN CẠNH M là ghost layer của "online persona M" (sweater hồng pastel, opacity rất thấp, các cạnh đang tan dần thành hạt sáng).
+- Các floating UI cards từ Scene 02/04 giờ NHỎ HƠN, trôi RA XA khỏi M ra các góc khung, opacity ~40%, tan vào hạt sáng ấm.
+- (Tùy chọn) Một silhouette người bạn sinh viên Việt Nam đứng hơi sau lưng M, một tay đặt nhẹ lên vai M (mặt không chi tiết).
+
+Nhân vật M (merged — phiên bản hòa lại):
+- Mặc sweater oversized kem be với makeup natural dịu (outfit hybrid).
+- Nửa nụ cười THẬT, ánh mắt bình tĩnh và present.
+- Đứng cạnh cửa sổ, một tay có thể đặt nhẹ lên khung cửa.
+
+Ánh sáng: ánh vàng ấm bình minh từ cửa sổ (camera trái) chiếu lên một nửa mặt M; ánh xanh lạnh đêm sót lại chiếu nửa mặt kia; HAI NGUỒN gặp nhau dịu dàng ở đường giữa mặt M.
+
+Góc máy: ảnh ngang 16:9, half-body M, view 3/4 nhẹ.
+
+Palette: warm amber và honey gold pha với cool blue và cool gray, low–mid saturation. Palette chuyển tiếp từ Scene 03/05 sang Scene 08.
+```
+
 ### 07a · Background
 
-**Positive:**
-
 ```
-The same small Vietnamese rented room as scenes 03 and 05, but now with morning warm sunlight breaking through a half-open curtain, dust particles floating in the sunbeam, walls catching golden warm light mixed with residual cool blue from night. No character. Cinematic digital illustration, semi-realistic, painterly brush strokes, soft cinematic lighting, shallow depth of field, subtle film grain. Transition palette: cool blue shifting into warm amber and honey gold, low to mid saturation. 16:9 aspect ratio.
-```
+Hãy vẽ vẫn chính căn phòng trọ nhỏ ở Việt Nam như scene 03 và 05, nhưng lần này có ánh nắng sớm ấm xuyên qua tấm rèm mở hé, hạt bụi lơ lửng trong tia nắng, tường bắt ánh vàng ấm pha với ánh xanh lạnh còn sót lại từ đêm. Không có nhân vật.
 
-**Negative:**
+Bố cục: ảnh ngang 16:9.
 
-```
-text, letters, watermark, logo, signature, people, characters, heavy darkness, harsh contrast, low quality, blurry, oversaturated, cartoon, anime chibi, 3d render plastic
+Style: cinematic digital illustration, semi-realistic, painterly brush strokes, soft cinematic lighting, shallow depth of field, subtle film grain. Palette chuyển tiếp: xanh lạnh dần thành amber ấm và vàng mật ong, low–mid saturation.
+
+Trong ảnh không có chữ/logo/watermark, không có người, không có tối nặng, không có tương phản gắt. Tránh phong cách anime chibi và 3D nhựa.
 ```
 
-### 07b · Merged M (character) — attach reference sheet 6.1
+### 07b · Merged M (character) — đính kèm reference sheet 6.1
 
-**Positive:**
-
-```
-Vietnamese female university student M (use the attached character reference sheet), wearing a hybrid outfit: cream beige sweater with soft natural makeup. Standing near a window, soft genuine half-smile, eyes calm and present. Warm golden light on one side of her face, cool blue residual light on the other side, the two lights meeting softly at the centerline of her face. Character isolated on a transparent background, half-body, slight 3/4 angle. Cinematic digital illustration, semi-realistic, painterly brush strokes, soft cinematic lighting, subtle film grain. Color palette of warm amber and gold mixing with cool blue and cool gray, low saturation.
-```
-
-**Negative:**
+> Upload **reference sheet 6.1** vào turn chat này trước khi paste prompt.
 
 ```
-text, letters, watermark, logo, signature, extra fingers, distorted face, asymmetrical eyes, multiple separate people, background scenery, exaggerated expression, low quality, blurry, oversaturated, cartoon, anime chibi, 3d render plastic
+Hãy vẽ nhân vật M — nữ sinh viên Việt Nam 19 tuổi trong ảnh tham chiếu đính kèm — giữ đúng khuôn mặt và dáng người.
+
+M mặc outfit hybrid: sweater kem be với makeup natural dịu. Đứng cạnh cửa sổ, nửa nụ cười thật dịu, ánh mắt bình tĩnh và present.
+
+Ánh sáng: ánh vàng ấm bên một nửa mặt, ánh xanh lạnh còn sót bên nửa còn lại — hai nguồn sáng gặp nhau dịu dàng ở đường giữa mặt. Half-body, góc 3/4 nhẹ.
+
+Nền: xám trung tính phẳng để dễ tách nhân vật khi compose vào background 07a.
+
+Style: cinematic digital illustration, semi-realistic, painterly brush strokes, soft cinematic lighting, subtle film grain. Palette: warm amber và gold pha với cool blue và cool gray, low saturation.
+
+Trong ảnh không có chữ/logo/watermark, chỉ một nhân vật M (không nhân đôi), không có background phức tạp, không có biểu cảm cường điệu. Khuôn mặt cân đối, đủ ngón tay, đôi mắt đối xứng. Tránh phong cách anime chibi và 3D nhựa.
 ```
 
-### 07c · Fading online persona (optional ghost layer) — attach reference sheet 6.1
+### 07c · Fading online persona (optional ghost layer) — đính kèm reference sheet 6.1
 
-**Positive:**
-
-```
-Vietnamese female university student M (use the attached character reference sheet) styled as the "online persona": pastel pink sweater, glam makeup. Rendered at very low opacity like a translucent ghost, overlapping behind the merged M, edges dissolving into soft light particles. Transparent background, isolated layer. Painterly, soft cinematic lighting, subtle film grain. Soft pink-violet glow palette at low saturation.
-```
-
-**Negative:**
+> Upload **reference sheet 6.1** vào turn chat này trước khi paste prompt.
 
 ```
-text, letters, watermark, logo, signature, extra fingers, distorted face, opaque solid render, harsh outline, multiple separate people, background scenery, low quality, blurry, oversaturated, cartoon, anime chibi, 3d render plastic
+Hãy vẽ nhân vật M — nữ sinh viên Việt Nam 19 tuổi trong ảnh tham chiếu đính kèm — phiên bản "online persona": sweater hồng pastel, makeup glam.
+
+Render ở opacity rất thấp như một bóng ma trong suốt, sẽ đặt chồng phía sau merged M, các cạnh tan dần thành hạt sáng dịu.
+
+Bố cục: nền đen phẳng để compose dùng blend mode "screen" trên React layer.
+
+Style: painterly, soft cinematic lighting, subtle film grain. Palette: pink-violet glow dịu, low saturation.
+
+Trong ảnh không có chữ/logo/watermark, chỉ một nhân vật M, không có render đặc cứng, không có viền nét gắt, không có background. Khuôn mặt cân đối, đủ ngón tay. Tránh phong cách anime chibi và 3D nhựa.
 ```
 
 ### 07d · Fading social cards (props)
 
-**Positive:**
-
 ```
-The same floating UI cards from Scene 02d, but smaller, drifting outward away from the center, edges dissolving into warm light particles, overall opacity around 40 percent. Isolated transparent PNG assets. Painterly, soft cinematic lighting, subtle film grain. Color palette of midnight blue, deep violet, cool gray with warm amber accents, low saturation.
-```
+Hãy vẽ vẫn các floating UI card như Scene 02d, nhưng giờ nhỏ hơn, trôi ra xa khỏi trung tâm, các cạnh tan dần thành hạt sáng ấm, opacity tổng khoảng 40%.
 
-**Negative:**
+Bố cục: nền xám trung tính phẳng để dễ tách thành PNG riêng từng card khi compose.
 
-```
-text, letters, words, readable typography, watermark, logo, brand, sharp opaque cards, characters, low quality, blurry, cartoon, 3d render plastic
+Style: painterly, soft cinematic lighting, subtle film grain. Palette: midnight blue, deep violet, cool gray with warm amber accents, low saturation.
+
+Trong ảnh không có chữ thật, không typography đọc được, không logo, không tên thương hiệu, không có card nét sắc đặc, không có nhân vật. Tránh phong cách anime chibi và 3D nhựa.
 ```
 
 ### 07e · Friend silhouette (optional)
 
-**Positive:**
-
 ```
-Soft silhouette of one supportive Vietnamese university-age friend standing slightly behind M, hand gently placed on her shoulder, warm backlight from a window, face not detailed. Isolated, transparent background. Cinematic digital illustration, semi-realistic, painterly brush strokes, soft cinematic lighting, subtle film grain. Warm amber and gold accents with cool gray shadow side, low saturation.
-```
+Hãy vẽ một silhouette dịu của một người bạn sinh viên Việt Nam tuổi đại học đứng hơi phía sau M, một tay đặt nhẹ lên vai M, backlight ấm từ cửa sổ, khuôn mặt không có chi tiết rõ.
 
-**Negative:**
+Bố cục: chỉ vẽ riêng nhân vật bạn (không vẽ M ở đây), trên nền xám trung tính phẳng để dễ tách lớp khi compose.
 
-```
-text, letters, watermark, logo, signature, extra fingers, distorted face, sharp recognizable face, multiple friends, main character M, background scenery, low quality, blurry, oversaturated, cartoon, anime chibi, 3d render plastic
+Style: cinematic digital illustration, semi-realistic, painterly brush strokes, soft cinematic lighting, subtle film grain. Palette: warm amber và gold với cool gray bên vùng bóng, low saturation.
+
+Trong ảnh không có chữ/logo/watermark, không có khuôn mặt nhận diện rõ, không có nhân vật M, không có background phức tạp. Tránh phong cách anime chibi và 3D nhựa.
 ```
 
 ---
 
 ## Scene 08 – Kết / Tìm lại mình
 
+### Scene Anchor (paste nguyên xi vào ĐẦU mỗi prompt layer 08a–08d)
+
+```
+[SCENE ANCHOR — Scene 08: Kết / Tìm lại mình]
+
+Setting: ban công nhỏ hoặc cửa sổ ký túc xá vào lúc BÌNH MINH, view nhìn ra skyline thành phố Việt Nam tĩnh lặng.
+
+Layout cố định (mọi layer phải khớp):
+- Thanh chắn ban công chiếm 1/3 DƯỚI khung hình.
+- Trên thanh chắn: một chiếc smartphone ÚP MẶT, một cốc sứ trà ấm bốc khói mảnh, một chậu cây nhỏ bên cạnh.
+- M đứng phía trong ban công, hai tay đặt nhẹ trên thanh chắn, half-body, view 3/4 nhẹ từ phía sau-bên hông để thấy profile bình tĩnh của M.
+- Phía trước M (xa, qua ban công): skyline thành phố các toà nhà silhouette xanh lạnh, bầu trời hồng-vàng dịu, mây thấp bắt ánh ấm, vài con chim sớm trên trời.
+
+Nhân vật M: mặc áo len mỏng VÀNG NHẠT mềm, tóc xõa tự nhiên, gió nhẹ thổi tóc bay nhẹ (outfit "kết").
+
+Ánh sáng: ánh bình minh ấm chiếu từ phía bên ngoài (trước mặt M, từ phía skyline) lên mặt và tóc M; phần lưng M có cool blue dịu sót lại.
+
+Góc máy: wide cinematic 16:9, từ phía sau-bên hông M, half-body. M không quay mặt vào camera.
+
+Palette: pink, peach, gold dịu ấm với phần xa xanh lạnh, low–mid saturation.
+```
+
 ### 08a · Background
 
-**Positive:**
-
 ```
-View from a small balcony or dorm window at sunrise over a calm Vietnamese city skyline, soft pink-gold sky, low clouds catching warm light, distant buildings in cool blue silhouette, a few early birds in the sky. Wide cinematic composition, no character. Cinematic digital illustration, semi-realistic, painterly brush strokes, soft cinematic lighting, shallow depth of field, subtle film grain. Warm gentle palette of pink, peach, gold with cool blue distance, low to mid saturation. 16:9 aspect ratio.
-```
+Hãy vẽ view nhìn từ ban công nhỏ hoặc cửa sổ ký túc xá lúc bình minh, hướng ra skyline thành phố Việt Nam tĩnh lặng: bầu trời hồng-vàng dịu, mây thấp bắt ánh ấm, các toà nhà xa silhouette xanh lạnh, vài con chim sớm trên trời. Không có nhân vật.
 
-**Negative:**
+Bố cục: wide cinematic shot. Ảnh ngang 16:9.
 
-```
-text, letters, watermark, logo, signature, people, characters, harsh night darkness, heavy storm, low quality, blurry, oversaturated, cartoon, anime chibi, 3d render plastic
+Style: cinematic digital illustration, semi-realistic, painterly brush strokes, soft cinematic lighting, shallow depth of field, subtle film grain. Palette dịu ấm: pink, peach, gold với phần xa xanh lạnh, low–mid saturation.
+
+Trong ảnh không có chữ/logo/watermark, không có người, không có đêm tối gắt, không có bão. Tránh phong cách anime chibi và 3D nhựa.
 ```
 
 ### 08b · Foreground (balcony props)
 
-**Positive:**
-
 ```
-Balcony railing occupying the lower third of frame, a smartphone face-down on the railing, a ceramic cup of warm tea releasing thin steam, a small potted plant beside it. No character, transparent background. Cinematic digital illustration, semi-realistic, painterly, soft cinematic lighting, subtle film grain. Color palette of warm amber and honey gold with cool gray accents, low saturation.
-```
+Hãy vẽ thanh chắn ban công chiếm 1/3 dưới khung hình: một chiếc smartphone úp mặt trên thanh chắn, một cốc sứ trà ấm bốc khói mảnh, một chậu cây nhỏ bên cạnh. Không có nhân vật.
 
-**Negative:**
+Bố cục: nền xám trung tính phẳng để dễ tách lớp foreground khi compose vào background 08a.
 
-```
-text, letters, watermark, logo, brand on phone, signature, people, characters, harsh artificial light, low quality, blurry, oversaturated, cartoon, 3d render plastic
+Style: cinematic digital illustration, semi-realistic, painterly, soft cinematic lighting, subtle film grain. Palette: warm amber và honey gold với cool gray accents, low saturation.
+
+Trong ảnh không có chữ/logo trên điện thoại, không có watermark, không có ánh sáng nhân tạo gắt, không có người. Tránh phong cách anime chibi và 3D nhựa.
 ```
 
-### 08c · Character (M) — attach reference sheet 6.1
+### 08c · Character (M) — đính kèm reference sheet 6.1
 
-**Positive:**
-
-```
-Vietnamese female university student M (use the attached character reference sheet), wearing the "kết" outfit: soft yellow knit sweater, hair down naturally. Standing at a balcony, hands resting on the railing, looking out toward the sunrise, shot from slightly behind in 3/4 view so we see her calm profile. Warm sunrise light on her face and hair, gentle wind softly moving her hair. Character isolated on a transparent background, half-body. Cinematic digital illustration, semi-realistic, painterly brush strokes, soft cinematic lighting, subtle film grain. Warm gentle palette of pink, peach, gold, low saturation.
-```
-
-**Negative:**
+> Upload **reference sheet 6.1** vào turn chat này trước khi paste prompt.
 
 ```
-text, letters, watermark, logo, signature, extra fingers, distorted face, asymmetrical eyes, multiple people, background scenery, tired sad expression, harsh night light, low quality, blurry, oversaturated, cartoon, anime chibi, 3d render plastic
+Hãy vẽ nhân vật M — nữ sinh viên Việt Nam 19 tuổi trong ảnh tham chiếu đính kèm — giữ đúng khuôn mặt và dáng người.
+
+M mặc outfit "kết": áo len vàng nhạt mềm, tóc xõa tự nhiên. Đứng ở ban công, hai tay đặt nhẹ trên thanh chắn, nhìn ra phía bình minh, góc máy hơi từ phía sau ở view 3/4 để thấy profile bình tĩnh của M.
+
+Ánh sáng: ánh bình minh ấm chiếu lên mặt và tóc, gió nhẹ thổi tóc bay nhẹ. Half-body.
+
+Nền: xám trung tính phẳng để dễ tách nhân vật khi compose vào background 08a.
+
+Style: cinematic digital illustration, semi-realistic, painterly brush strokes, soft cinematic lighting, subtle film grain. Palette dịu ấm: pink, peach, gold, low saturation.
+
+Trong ảnh không có chữ/logo/watermark, chỉ một nhân vật M, không có background phức tạp, không có biểu cảm mệt buồn, không có ánh đêm gắt. Khuôn mặt cân đối, đủ ngón tay, đôi mắt đối xứng. Tránh phong cách anime chibi và 3D nhựa.
 ```
 
 ### 08d · Atmosphere overlay
 
-**Positive:**
-
 ```
-Soft warm light leaks across the frame, faint lens flare from the sunrise direction, gentle warm bokeh particles, very subtle film grain. Transparent overlay layer, no character, no scenery. Warm amber, peach, soft gold palette at low opacity.
-```
+Hãy vẽ một lớp overlay light leak ấm dịu xuyên qua khung hình, lens flare nhẹ từ phía bình minh, các hạt bokeh ấm bay nhẹ, subtle film grain.
 
-**Negative:**
+Bố cục: nền đen phẳng để compose dùng blend mode "screen" trên React layer. Không có nhân vật, không có cảnh.
 
-```
-text, letters, watermark, logo, characters, opaque background, cold blue tones, heavy darkness, low quality, blurry
+Palette: warm amber, peach, soft gold — opacity thấp.
+
+Trong ảnh không có chữ/logo/watermark, không có tông xanh lạnh, không có tối nặng.
 ```
 
 ---
 
-## 6.x · Lưu ý khi generate
+## 6.x · Lưu ý khi generate với ChatGPT
 
-- Generate **character sheet (6.1)** trước. Sau đó mỗi scene dùng nó làm reference (Midjourney `--cref`, Stable Diffusion IP-Adapter / Reference ControlNet, hoặc Nano Banana / Gemini Image với image input).
-- Generate **background** ở 16:9 đầy đủ, **character/props** ở nền trong suốt (PNG) hoặc nền solid để remove dễ.
-- Giữ **cùng hướng ánh sáng** giữa các layer của cùng 1 scene (note đã ghi sẵn trong từng prompt).
-- Ghép layer trong React Spring theo thứ tự (back → mid → character → front → overlay) để dùng được parallax như đã mô tả ở mục 4.
+- Generate **character sheet (6.1)** trước. Sau đó với mỗi scene có nhân vật M: **upload reference sheet vào cùng turn chat** trước khi paste prompt — ChatGPT sẽ tự giữ khuôn mặt nhất quán.
+- Generate **background** ở tỉ lệ 16:9 đầy đủ. Với **character/props/overlay**: prompt đã yêu cầu nền xám trung tính phẳng (cho character/props) hoặc nền đen phẳng (cho overlay sẽ blend "screen"). Sau khi tải về, dùng `remove.bg`, Photoshop hoặc `rembg` để tách nền nếu cần PNG trong suốt.
+- Giữ **cùng hướng ánh sáng** giữa các layer của cùng 1 scene (đã note sẵn trong từng prompt) để khi compose không bị lệch.
+- Nếu kết quả lệch reference quá nhiều, gõ follow-up: *"Vẽ lại, giữ đúng khuôn mặt và kiểu tóc của nhân vật trong ảnh tham chiếu đầu tiên. Đừng thay đổi nét mặt."*
+- Nếu DALL·E thêm chữ ngoài ý muốn lên ảnh, gõ follow-up: *"Vẽ lại nhưng tuyệt đối không có chữ hay ký tự nào trong ảnh."*
+- Ghép layer trong React Spring theo thứ tự (back → mid → character → front → overlay) để dùng parallax như đã mô tả ở mục 4.
 
 ---
 
