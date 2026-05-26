@@ -722,12 +722,13 @@ Mỗi scene được tách thành **6 prompt theo cấu trúc graphic-novel**: 1
 
    - Như vậy mọi panel cùng scene đều dựa trên cùng "thế giới" — outfit M giữ nguyên giữa 4 panel, ánh sáng giữ đúng 2 hướng, đạo cụ cố định giữ vị trí. 4 panel của cùng scene sẽ ăn nhập về tông và logic khi compose trong React.
    - Mỗi prompt PANEL đã có chỉ dẫn "khung vuông 1:1, viền mảnh đen, nền NGOÀI khung là trắng kem trung tính phẳng" — DALL·E sẽ render dạng "tem panel" sẵn sàng cắt và đặt lên BG trong React.
+
 4. Với **BG** và **MOTIF**: prompt đã yêu cầu vùng giữa khung "khá trống" hoặc "HOÀN TOÀN TRỐNG" — để khi đặt panel lên trên không che mất phần đẹp.
 5. Tách nền sau khi tải: ảnh PANEL có nền trắng kem solid → dùng `remove.bg`, Photoshop hoặc `rembg` để tách khung panel thành PNG transparent rồi compose lên BG trong React.
 6. ChatGPT/DALL·E **không nhận negative prompt** kiểu Midjourney. Mọi yêu cầu "không có…" đã được viết lại thành chỉ dẫn dương trong cùng prompt.
 7. Tỉ lệ khung hình ghi bằng lời ("ảnh ngang 16:9" cho BG/MOTIF, "khung vuông 1:1" cho PANEL) — ChatGPT tự chọn size phù hợp.
-8. Nếu kết quả lệch reference sheet, gõ tiếp: *"Vẽ lại, giữ đúng khuôn mặt và kiểu tóc của nhân vật trong ảnh tham chiếu đầu tiên."*
-9. Nếu DALL·E vẽ panel KHÔNG có khung viền hoặc KHÔNG có nền trắng kem ngoài khung như yêu cầu, gõ tiếp: *"Vẽ lại — phần nội dung phải nằm BÊN TRONG một khung vuông viền mảnh đen ở chính giữa ảnh; phần ngoài khung phải là nền trắng kem trung tính phẳng để dễ cắt."*
+8. Nếu kết quả lệch reference sheet, gõ tiếp: _"Vẽ lại, giữ đúng khuôn mặt và kiểu tóc của nhân vật trong ảnh tham chiếu đầu tiên."_
+9. Nếu DALL·E vẽ panel KHÔNG có khung viền hoặc KHÔNG có nền trắng kem ngoài khung như yêu cầu, gõ tiếp: _"Vẽ lại — phần nội dung phải nằm BÊN TRONG một khung vuông viền mảnh đen ở chính giữa ảnh; phần ngoài khung phải là nền trắng kem trung tính phẳng để dễ cắt."_
 
 **Style tokens dùng chung (đã inline trong mọi prompt — chỉ tham khảo):**
 
@@ -1055,17 +1056,17 @@ Layout output theo loại ảnh:
 ### 03·BG — Atmosphere background split dọc (không nhân vật)
 
 ```
-Hãy vẽ một background chia DỌC ở chính giữa khung thành 2 nửa, đường nối ở giữa mềm như watercolor wash chảy vào nhau (KHÔNG phải đường thẳng cứng).
+  Hãy vẽ một background chia DỌC ở chính giữa khung thành 2 nửa, đường nối ở giữa mềm như watercolor wash chảy vào nhau (KHÔNG phải đường thẳng cứng).
 
-NỬA TRÁI: studio chụp hình ảo — gradient hồng pastel pha magenta ấm, bokeh ring-light beauty mềm, hạt sparkle nhỏ trôi nhẹ. Sạch và được curate.
+  NỬA TRÁI: studio chụp hình ảo — gradient hồng pastel pha magenta ấm, bokeh ring-light beauty mềm, hạt sparkle nhỏ trôi nhẹ. Sạch và được curate.
 
-NỬA PHẢI: phòng trọ nhỏ tối ở Việt Nam vào ban đêm — bóng mờ giường bừa, đống quần áo trên ghế, cốc mì ăn liền dở, dây sạc nằm trên sàn. Nguồn sáng duy nhất là ánh xanh lạnh từ ngoài khung hắt lên tường. Lặng và cô đơn.
+  NỬA PHẢI: phòng trọ nhỏ tối ở Việt Nam vào ban đêm — bóng mờ giường bừa, đống quần áo trên ghế, cốc mì ăn liền dở, dây sạc nằm trên sàn. Nguồn sáng duy nhất là ánh xanh lạnh từ ngoài khung hắt lên tường. Lặng và cô đơn.
 
-KHÔNG có nhân vật ở bất kỳ nửa nào. Vùng giữa mỗi nửa khung để khá trống (sẽ bị panel che). Ảnh ngang 16:9.
+  KHÔNG có nhân vật ở bất kỳ nửa nào. Vùng giữa mỗi nửa khung để khá trống (sẽ bị panel che). Ảnh ngang 16:9.
 
-Style: cinematic digital illustration, semi-realistic, painterly brush strokes, soft cinematic lighting, subtle film grain. Palette nửa trái: pastel pink, magenta, warm cream. Palette nửa phải: deep teal, cold blue, charcoal gray.
+  Style: cinematic digital illustration, semi-realistic, painterly brush strokes, soft cinematic lighting, subtle film grain. Palette nửa trái: pastel pink, magenta, warm cream. Palette nửa phải: deep teal, cold blue, charcoal gray.
 
-Trong ảnh không có chữ/logo/watermark, không có người. Tránh phong cách anime chibi và 3D nhựa.
+  Trong ảnh không có chữ/logo/watermark, không có người. Tránh phong cách anime chibi và 3D nhựa.
 ```
 
 ### 03·MOTIF — Decorative split motif
@@ -1788,12 +1789,12 @@ Trong ảnh không có chữ/logo/watermark, chỉ một nhân vật M nhỏ tro
 ## 6.x · Lưu ý khi generate với ChatGPT
 
 - Generate **character sheet (6.1)** trước. Sau đó với mỗi prompt PANEL có nhân vật M: **upload reference sheet vào cùng turn chat** trước khi paste prompt — ChatGPT sẽ tự giữ khuôn mặt nhất quán.
-- Thứ tự generate trong 1 scene: **BG → MOTIF → P1 → P2 → P3 → P4**. Mỗi turn paste Scene Anchor lên trước. Nếu panel sau lệch panel trước, thêm: *"Giữ đúng outfit, ánh sáng và biểu cảm như đã mô tả trong Scene Anchor."*
+- Thứ tự generate trong 1 scene: **BG → MOTIF → P1 → P2 → P3 → P4**. Mỗi turn paste Scene Anchor lên trước. Nếu panel sau lệch panel trước, thêm: _"Giữ đúng outfit, ánh sáng và biểu cảm như đã mô tả trong Scene Anchor."_
 - Generate **BG** ở tỉ lệ 16:9 đầy đủ. **MOTIF** cũng 16:9 nhưng phần giữa khung trống — sau khi tải về có thể dùng `remove.bg` để tách nền trắng kem thành PNG transparent. **PANEL** là khung vuông 1:1 với khung viền sẵn — dùng `remove.bg` hoặc Photoshop để cắt khung panel thành PNG có alpha rồi compose lên BG trong React.
 - Giữ **cùng hướng ánh sáng** giữa 4 panel của 1 scene (đã note sẵn trong Scene Anchor) — đây là yếu tố giữ "1 trang truyện" trông liền mạch khi đặt cạnh nhau.
-- Nếu DALL·E vẽ panel mà KHÔNG có khung viền hoặc nền ngoài không phải trắng kem phẳng, gõ follow-up: *"Vẽ lại — nội dung trong một khung vuông viền đen mảnh ở chính giữa ảnh; phần ngoài khung phải là nền trắng kem trung tính phẳng."*
-- Nếu kết quả lệch reference quá nhiều, gõ follow-up: *"Vẽ lại, giữ đúng khuôn mặt và kiểu tóc của nhân vật trong ảnh tham chiếu đầu tiên. Đừng thay đổi nét mặt."*
-- Nếu DALL·E thêm chữ ngoài ý muốn (cả trong panel lẫn ngoài khung), gõ follow-up: *"Vẽ lại nhưng tuyệt đối không có chữ hay ký tự nào trong ảnh."*
+- Nếu DALL·E vẽ panel mà KHÔNG có khung viền hoặc nền ngoài không phải trắng kem phẳng, gõ follow-up: _"Vẽ lại — nội dung trong một khung vuông viền đen mảnh ở chính giữa ảnh; phần ngoài khung phải là nền trắng kem trung tính phẳng."_
+- Nếu kết quả lệch reference quá nhiều, gõ follow-up: _"Vẽ lại, giữ đúng khuôn mặt và kiểu tóc của nhân vật trong ảnh tham chiếu đầu tiên. Đừng thay đổi nét mặt."_
+- Nếu DALL·E thêm chữ ngoài ý muốn (cả trong panel lẫn ngoài khung), gõ follow-up: _"Vẽ lại nhưng tuyệt đối không có chữ hay ký tự nào trong ảnh."_
 - Compose trong React: **BG full-bleed** (z-index thấp nhất) → **MOTIF** đặt chồng (z-index giữa, blend "multiply" hoặc "normal") → **4 PANEL** đặt thành cụm 2×2 hoặc 1×4 ở chính giữa khung (z-index cao nhất). Mỗi panel có animation `opacity 0→1 + scale 0.95→1` khi vào viewport, lệch nhau 200–300ms.
 
 ---
