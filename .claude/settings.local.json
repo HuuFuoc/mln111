@@ -47,7 +47,12 @@
       "Bash(cp \"assets/scene3/ChatGPT Image 12_15_43 26 thg 5, 2026.png\" public/images/scene-03/bg.png)",
       "Bash(cp \"assets/scene3/ChatGPT Image 12_15_51 26 thg 5, 2026.png\" public/images/scene-03/motif.png)",
       "Bash(cp \"assets/scene3/ChatGPT Image 12_15_56 26 thg 5, 2026.png\" public/images/scene-03/panel-1-online.png)",
-      "Bash(cp \"assets/scene3/ChatGPT Image 12_16_00 26 thg 5, 2026.png\" public/images/scene-03/panel-2-online.png)"
+      "Bash(cp \"assets/scene3/ChatGPT Image 12_16_00 26 thg 5, 2026.png\" public/images/scene-03/panel-2-online.png)",
+      "Bash(mkdir -p public/images/scene-05 public/images/scene-06 public/images/scene-07 public/images/scene-08)",
+      "Bash(cp \"assets/scene5/ChatGPT Image 22_59_38 26 thg 5, 2026.png\" public/images/scene-05/bg.png)",
+      "Bash(cp \"assets/scene5/ChatGPT Image 22_59_46 26 thg 5, 2026.png\" public/images/scene-05/motif.png)",
+      "Bash(cp \"assets/scene5/ChatGPT Image 22_59_48 26 thg 5, 2026.png\" public/images/scene-05/panel-1.png)",
+      "Bash(cp \"assets/scene5/ChatGPT Image 22_59_50 26 thg 5, 2026.png\" public/images/scene-05/panel-2.png)"
     ]
   }
 }
