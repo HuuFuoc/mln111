@@ -1525,3 +1525,34 @@ export const storyScenes: StorySceneProps[] = [
   scene07,
   scene08,
 ];
+
+/**
+ * Per-scene ambient audio. ALL scenes are listed — entries without `src` are
+ * explicit silence (the controller knows to fade out when scrolling into them).
+ * Silence on 03/06/07 is intentional storytelling.
+ */
+/**
+ * Sidebar nav entries — short titles that fit a tooltip without wrapping.
+ * Keep in sync with each scene's actual <h1> if you rename a chapter.
+ */
+export const sceneNav: { sceneId: string; chapter: string; title: string }[] = [
+  { sceneId: "scene-01", chapter: "01", title: "Ánh đèn đầu tiên" },
+  { sceneId: "scene-02", chapter: "02", title: "Thành phố và tiêu chuẩn mới" },
+  { sceneId: "scene-03", chapter: "03", title: "Một M luôn tích cực" },
+  { sceneId: "scene-04", chapter: "04", title: "“Ổn mà.”" },
+  { sceneId: "scene-05", chapter: "05", title: "Mình là ai?" },
+  { sceneId: "scene-06", chapter: "06", title: "Tổng hòa các quan hệ xã hội" },
+  { sceneId: "scene-07", chapter: "07", title: "Không tách khỏi xã hội" },
+  { sceneId: "scene-08", chapter: "08", title: "Tìm lại mình" },
+];
+
+export const sceneAudio: { sceneId: string; src?: string }[] = [
+  { sceneId: "scene-01", src: "/audio/scene1.mp3" },
+  { sceneId: "scene-02", src: "/audio/scene2.mp3" },
+  { sceneId: "scene-03" }, // intentional silence
+  { sceneId: "scene-04", src: "/audio/scene4.mp3" },
+  { sceneId: "scene-05", src: "/audio/scene5.mp3" },
+  { sceneId: "scene-06" }, // intentional silence
+  { sceneId: "scene-07" }, // intentional silence
+  { sceneId: "scene-08", src: "/audio/scene8.mp3" },
+];

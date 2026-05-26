@@ -52,7 +52,11 @@
       "Bash(cp \"assets/scene5/ChatGPT Image 22_59_38 26 thg 5, 2026.png\" public/images/scene-05/bg.png)",
       "Bash(cp \"assets/scene5/ChatGPT Image 22_59_46 26 thg 5, 2026.png\" public/images/scene-05/motif.png)",
       "Bash(cp \"assets/scene5/ChatGPT Image 22_59_48 26 thg 5, 2026.png\" public/images/scene-05/panel-1.png)",
-      "Bash(cp \"assets/scene5/ChatGPT Image 22_59_50 26 thg 5, 2026.png\" public/images/scene-05/panel-2.png)"
+      "Bash(cp \"assets/scene5/ChatGPT Image 22_59_50 26 thg 5, 2026.png\" public/images/scene-05/panel-2.png)",
+      "Bash(ffmpeg -version)",
+      "PowerShell(winget install --id Gyan.FFmpeg -e --accept-source-agreements --accept-package-agreements --silent 2>&1)",
+      "PowerShell($env:Path = [System.Environment]::GetEnvironmentVariable\\(\"Path\",\"Machine\"\\) + \";\" + [System.Environment]::GetEnvironmentVariable\\(\"Path\",\"User\"\\); ffmpeg -y -i public/audio/scene4.wav -ac 1 -b:a 96k public/audio/scene4.mp3 2>&1 | Select-Object -Last 6)",
+      "PowerShell($env:Path = [System.Environment]::GetEnvironmentVariable\\(\"Path\",\"Machine\"\\) + \";\" + [System.Environment]::GetEnvironmentVariable\\(\"Path\",\"User\"\\); ffmpeg -y -i public/audio/scene5.wav -ac 1 -b:a 96k public/audio/scene5.mp3 2>&1 | Select-Object -Last 6)"
     ]
   }
 }
